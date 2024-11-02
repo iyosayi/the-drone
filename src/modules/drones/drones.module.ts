@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose'
+import { MongooseModule } from '@nestjs/mongoose';
 import { DronesService } from './drones.service';
 import { DronesController } from './drones.controller';
 import { Drone, DroneSchema } from './entities/drone.entity';
@@ -17,21 +17,34 @@ import { SequenceService } from './sequence.service';
     MongooseModule.forFeature([
       {
         name: Drone.name,
-        schema: DroneSchema
+        schema: DroneSchema,
       },
       {
         name: Sequence.name,
-        schema: SequenceSchema
+        schema: SequenceSchema,
       },
       {
         name: Orders.name,
-        schema: OrdersSchema
-      }
+        schema: OrdersSchema,
+      },
     ]),
-    MedicationsModule
+    MedicationsModule,
   ],
   controllers: [DronesController],
-  providers: [DronesService, SequenceRepository, DronesRepository, OrdersRepository, HelperMethods, SequenceService],
-  exports: [SequenceRepository, DronesService, DronesRepository, SequenceRepository]
+  providers: [
+    DronesService,
+    SequenceRepository,
+    DronesRepository,
+    OrdersRepository,
+    HelperMethods,
+    SequenceService,
+  ],
+  exports: [
+    SequenceRepository,
+    DronesService,
+    DronesRepository,
+    SequenceRepository,
+    SequenceService
+  ],
 })
 export class DronesModule {}
