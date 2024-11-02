@@ -4,7 +4,8 @@ import {
   IsInt,
   Min,
   Max,
-  IsObject
+  IsObject,
+  IsNotEmpty
 } from 'class-validator';
 import { DroneModelEnum } from '@common/enums';
 import { Transform } from 'class-transformer'
@@ -27,10 +28,6 @@ export class CreateDroneDto {
 
 export class LoadDroneDto {
   @IsString()
-  droneSerialNumber: string
-
-  @IsObject()
-  medication: {
-    code: string
-  }
+  @IsNotEmpty()
+  medications: string[]
 }

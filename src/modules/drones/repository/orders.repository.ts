@@ -1,30 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { BaseRepository } from '@common/base.repository';
-import { LoadDroneDto } from '../dto/create-drone.dto';
 import { Orders, OrdersDocument } from '../entities/orders.entity';
+import { HelperMethods } from '@common/helpers';
 
 @Injectable()
 export class OrdersRepository extends BaseRepository<OrdersDocument> {
   constructor(
     @InjectModel(Orders.name) private orderModel: Model<OrdersDocument>,
+    private readonly helperMethods: HelperMethods
   ) {
     super(orderModel);
   }
   
-  async loadDrone(data: LoadDroneDto) {
-    try {
-        return await this.orderModel.create({drone: data.droneSerialNumber, medication: data.medication.code})
-    } catch (error) {
-        
-    }
-  }
-
   async getOrders(droneId: string) {
     const pipeline = [
       {
-        $match: {drone: droneId}
+        $match: { drone: this.helperMethods.convertToObjectId(droneId) }
       },
       {
         $lookup: {
@@ -41,16 +34,45 @@ export class OrdersRepository extends BaseRepository<OrdersDocument> {
         }
       },
       {
+        $lookup: {
+          from: 'medications',
+          localField: 'medication',
+          foreignField: '_id',
+          as: 'medication'
+        }
+      },
+      {
+        $unwind: {
+          path: '$medication',
+          preserveNullAndEmptyArrays: true,
+        }
+      },
+      {
+        $group: {
+          _id: '$drone._id',
+          serialNumber: { $first: '$drone.serialNumber' },
+          model: { $first: '$drone.droneModel' },
+          medications: {
+            $push: {
+              name: '$medication.name',
+              code: '$medication.code',
+              weight: '$medication.weight',
+              image: '$medication.image',
+            }
+          }
+        }
+      },
+      {
         $project: {
+          _id: 0,
           id: '$_id',
-          serialNumber: '$serialNumber',
-          model: '$droneModel',
-          battery: '$battery',
-          orders: {$push: '$$ROOT'}
+          serialNumber: 1,
+          model: 1,
+          medications: 1
         }
       }
     ]
-    const orders = await this.orderModel.aggregate(pipeline)
+    const [orders] = await this.orderModel.aggregate(pipeline)
     return orders
   }
 }

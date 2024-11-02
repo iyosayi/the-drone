@@ -6,10 +6,10 @@ import { Medication } from '@modules/medications/entities/medication.entity'
 
 @Schema()
 export class Orders extends BaseSchema {
-  @Prop({ type: SchemaTypes.ObjectId, required: true, unique: true })
+  @Prop({ type: SchemaTypes.ObjectId, required: true, ref: 'Drone' })
   drone: Drone
 
-  @Prop({ type: SchemaTypes.ObjectId, required: true })
+  @Prop({ type: SchemaTypes.ObjectId, required: true, ref: 'Medication' })
   medication: Medication
 }
 

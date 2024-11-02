@@ -1,33 +1,38 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get } from '@nestjs/common';
 import { DronesService } from './drones.service';
-import { CreateDroneDto } from './dto/create-drone.dto';
+import { CreateDroneDto, LoadDroneDto } from './dto/create-drone.dto';
+import { HelperMethods } from '@common/helpers';
 
 @Controller('drones')
 export class DronesController {
-  constructor(private readonly dronesService: DronesService) {}
+  constructor(private readonly dronesService: DronesService, private readonly helperMethods: HelperMethods) {}
+
+  @Get('battery-health/:droneId')
+  async getDroneBatteryHealth(@Param('droneId') droneId) {
+    const response = await this.dronesService.getDroneBatteryHealth(droneId);
+    return this.helperMethods.sendSuccessResponse(response, 'Drone battery gotten successfully')
+  }
 
   @Post()
   async create(@Body() createDroneDto: CreateDroneDto) {
-    return this.dronesService.create(createDroneDto);
+    const createdDrone = await this.dronesService.create(createDroneDto);
+    return this.helperMethods.sendSuccessResponse(createdDrone, 'Drone created successfully')
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.dronesService.findAll();
-  // }
+  @Post(':serialNumber/load')
+  async loadDrones(@Body() body: LoadDroneDto, @Param('serialNumber') serialNumber) {
+    const response = await this.dronesService.loadDroneMedications(serialNumber, body.medications);
+    return this.helperMethods.sendSuccessResponse(response, 'Drone loaded successfully')
+  }
+  @Get('available')
+  async getDronesAvailableForLoading() {
+    const response = await this.dronesService.getAvailableDrones();
+    return this.helperMethods.sendSuccessResponse(response, 'Available drones retrieved successfully')
+  }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.dronesService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateDroneDto: UpdateDroneDto) {
-  //   return this.dronesService.update(+id, updateDroneDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.dronesService.remove(+id);
-  // }
+  @Get(':droneId')
+  async getDrone(@Body() body: LoadDroneDto, @Param('droneId') droneId) {
+    const response = await this.dronesService.getDroneWithOrders(droneId);
+    return this.helperMethods.sendSuccessResponse(response, 'Drone gotten successfully')
+  }
 }
