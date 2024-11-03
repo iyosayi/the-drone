@@ -9,43 +9,43 @@ import { HelperMethods } from '@common/helpers';
 export class OrdersRepository extends BaseRepository<OrdersDocument> {
   constructor(
     @InjectModel(Orders.name) private orderModel: Model<OrdersDocument>,
-    private readonly helperMethods: HelperMethods
+    private readonly helperMethods: HelperMethods,
   ) {
     super(orderModel);
   }
-  
+
   async getOrders(droneId: string) {
     const pipeline = [
       {
-        $match: { drone: this.helperMethods.convertToObjectId(droneId) }
+        $match: { drone: this.helperMethods.convertToObjectId(droneId) },
       },
       {
         $lookup: {
           from: 'drones',
           localField: 'drone',
           foreignField: '_id',
-          as: 'drone'
-        }
+          as: 'drone',
+        },
       },
       {
         $unwind: {
           path: '$drone',
           preserveNullAndEmptyArrays: true,
-        }
+        },
       },
       {
         $lookup: {
           from: 'medications',
           localField: 'medication',
           foreignField: '_id',
-          as: 'medication'
-        }
+          as: 'medication',
+        },
       },
       {
         $unwind: {
           path: '$medication',
           preserveNullAndEmptyArrays: true,
-        }
+        },
       },
       {
         $group: {
@@ -58,9 +58,10 @@ export class OrdersRepository extends BaseRepository<OrdersDocument> {
               code: '$medication.code',
               weight: '$medication.weight',
               image: '$medication.image',
-            }
-          }
-        }
+            },
+          },
+          totalMedicationWeight: {$sum: "$medication.weight"}
+        },
       },
       {
         $project: {
@@ -68,11 +69,12 @@ export class OrdersRepository extends BaseRepository<OrdersDocument> {
           id: '$_id',
           serialNumber: 1,
           model: 1,
-          medications: 1
-        }
-      }
-    ]
-    const [orders] = await this.orderModel.aggregate(pipeline)
-    return orders
+          medications: 1,
+          totalMedicationWeight: 1
+        },
+      },
+    ];
+    const [orders] = await this.orderModel.aggregate(pipeline);
+    return orders;
   }
 }

@@ -196,7 +196,7 @@ export abstract class BaseRepository<T extends Document> {
    * @param {import("./types").PaginationQuery} query Query
    * @returns {Promise<TModel[]>}
    */
-  async all(query) {
+  async all(query): Promise<T[]> {
     const sort = query?.sort || 'createdAt'
     return this.model
       .find({

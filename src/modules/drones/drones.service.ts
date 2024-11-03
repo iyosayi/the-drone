@@ -15,9 +15,9 @@ import { Orders } from './entities/orders.entity';
 
 @Injectable()
 export class DronesService {
-  private readonly MAX_WEIGHT_LIMIT = 500;
-  private readonly MIN_BATTERY_THRESHOLD = 25;
-  private readonly MAX_MEDICATIONS_PER_DRONE = 5;
+  public MAX_WEIGHT_LIMIT = 500;
+  public MIN_BATTERY_THRESHOLD = 25;
+  public MAX_MEDICATIONS_PER_DRONE = 5;
 
   constructor(
     private readonly droneRepository: DronesRepository,
@@ -58,7 +58,7 @@ export class DronesService {
 
     return drone;
   }
-  private async createDroneOrders(
+  async createDroneOrders(
     drone: Drone,
     medications: Medication[],
   ): Promise<Orders[]> {
@@ -68,59 +68,81 @@ export class DronesService {
     }));
     // @ts-ignore
     await this.ordersRepository.createMany(bulkInsertOpts);
-    this.updateDroneState(drone.id, DroneStates.Loaded)
-    return this.ordersRepository.getOrders(drone.id)
+    this.updateDroneState(drone.id, DroneStates.Loaded);
+    return this.ordersRepository.getOrders(drone.id);
   }
 
-  private performLoadChecks(drone: Drone, medications: Medication[]): void {
+  async calculateRemainingWeight(drone: Drone) {
+    const weightMap = {
+      [DroneModelEnum.LightWeight]: 150,
+      [DroneModelEnum.Middleweight]: 300,
+      [DroneModelEnum.Cruiserweight]: 400,
+      [DroneModelEnum.Heavyweight]: 500,
+    };
+
+    const orders = await this.ordersRepository.getOrders(drone.id);
+    const totalMedicationWeight = orders?.totalMedicationWeight ?? 0;
+    const maxCapacity = weightMap[drone.droneModel];
+    const remainingCapacity = maxCapacity - totalMedicationWeight;
+    return { remainingCapacity, maxCapacity, totalMedicationWeight };
+  }
+
+  async performLoadChecks(
+    drone: Drone,
+    medications: Medication[],
+  ): Promise<void> {
     const totalWeight = medications.reduce(
       (sum, medication) => sum + medication.weight,
       0,
     );
-
+    const { remainingCapacity, totalMedicationWeight, maxCapacity } =
+      await this.calculateRemainingWeight(drone);
     if (totalWeight > this.MAX_WEIGHT_LIMIT) {
       throw new BadRequestException(
         `Total medication weight (${totalWeight}g) exceeds drone limit (${this.MAX_WEIGHT_LIMIT}g)`,
       );
     }
 
+    if (totalWeight > remainingCapacity) {
+      throw new BadRequestException(
+        `Weight exceeds remaining capacity for ${drone.droneModel} drone. Can only add ${remainingCapacity}g more.`,
+      );
+    }
+
     switch (drone.droneModel) {
       case DroneModelEnum.LightWeight:
-        if (totalWeight > 150) {
+        if (totalWeight + totalMedicationWeight > 150) {
           throw new BadRequestException(
-            'Weight exceeds Lightweight drone capacity',
+            'Total weight exceeds Lightweight drone capacity',
           );
         }
         break;
       case DroneModelEnum.Middleweight:
-        if (totalWeight > 300) {
+        if (totalWeight + totalMedicationWeight > 300) {
           throw new BadRequestException(
-            'Weight exceeds Middleweight drone capacity',
+            'Total weight exceeds Middleweight drone capacity',
           );
         }
         break;
       case DroneModelEnum.Cruiserweight:
-        if (totalWeight > 400) {
+        if (totalWeight + totalMedicationWeight > 400) {
           throw new BadRequestException(
-            'Weight exceeds Cruiserweight drone capacity',
+            'Total weight exceeds Cruiserweight drone capacity',
           );
         }
         break;
       case DroneModelEnum.Heavyweight:
-        if (totalWeight > 500) {
+        if (totalWeight + totalMedicationWeight > 500) {
           throw new BadRequestException(
-            'Weight exceeds Cruiserweight drone capacity',
+            'Total weight exceeds Heavyweight drone capacity',
           );
         }
         break;
     }
   }
 
-  private async validateMedications(
-    medicationIds: string[],
-  ): Promise<Medication[]> {
+  async validateMedications(medicationIds: string[]): Promise<Medication[]> {
     const uniqueMedicationIds = [...new Set(medicationIds)];
-
     if (uniqueMedicationIds.length > this.MAX_MEDICATIONS_PER_DRONE) {
       throw new BadRequestException(
         `Exceeded maximum medications per drone. Limit: ${this.MAX_MEDICATIONS_PER_DRONE}`,
@@ -139,10 +161,14 @@ export class DronesService {
     return medications;
   }
 
-  private async validateDroneForLoading(serialNumber: string): Promise<Drone> {
-    const drone = await this.droneRepository.byQuery({ serialNumber });
+  async validateDroneForLoading(droneId: string): Promise<Drone> {
+    const drone = await this.droneRepository.byQuery({ _id: droneId });
     if (!drone) {
       throw new BadRequestException('Drone not found');
+    }
+    const { remainingCapacity } = await this.calculateRemainingWeight(drone);
+    if (drone.state === DroneStates.Loaded && remainingCapacity > 0) {
+      return drone;
     }
     if (drone.state !== DroneStates.Idle) {
       throw new BadRequestException(
@@ -155,26 +181,34 @@ export class DronesService {
         `Drone battery too low. Current: ${drone.battery}%. Minimum: ${this.MIN_BATTERY_THRESHOLD}%`,
       );
     }
-    this.updateDroneState(drone.id, DroneStates.Loading);
     return drone;
   }
 
   async updateDroneState(droneId: string, state: DroneStates) {
-    return this.droneRepository.update({ _id: droneId }, { state });
+    let opts = {
+      $set: { state },
+    };
+    if (state === DroneStates.Loaded) {
+      opts['$inc'] = { battery: -17 }; // just to simulate the drone being in operation and the battery health reduces..
+    }
+    return this.droneRepository.updateWithOperators({ _id: droneId }, opts);
   }
 
   async loadDroneMedications(
-    serialNumber: string,
+    droneId: string,
     medicationIds: string[],
   ): Promise<Orders[]> {
-    const drone = await this.validateDroneForLoading(serialNumber);
+    const drone = await this.validateDroneForLoading(droneId);
     const medications = await this.validateMedications(medicationIds);
-    this.performLoadChecks(drone, medications);
+    await this.performLoadChecks(drone, medications);
     return await this.createDroneOrders(drone, medications);
   }
 
   async getDroneById(id: string) {
-    const drone = await this.droneRepository.byID(id, null);
+    const drone = await this.droneRepository.byID(id);
+    if (!drone) {
+      throw new NotFoundException(`Drone with ID ${id} not found`);
+    }
     return {
       id: drone.id,
       serialNumber: drone.serialNumber,
@@ -185,7 +219,6 @@ export class DronesService {
     };
   }
 
-
   async getDroneWithOrders(droneId: string) {
     const orders = await this.ordersRepository.getOrders(droneId);
     if (!orders)
@@ -195,17 +228,27 @@ export class DronesService {
     return orders;
   }
 
-  getAvailableDrones() {
-    return this.droneRepository.all({
-      conditions: { state: { $eq: DroneStates.Idle } },
+  async getAvailableDrones() {
+    const drones = await this.droneRepository.all({
+      conditions: { state: { $ne: DroneStates.Idle } },
+    });
+    return drones.map((drone) => {
+      return {
+        id: drone.id,
+        serialNumber: drone.serialNumber,
+        model: drone.droneModel,
+        state: drone.state,
+        weight: drone.weight,
+        battery: drone.battery,
+      };
     });
   }
 
   async getDroneBatteryHealth(id: string) {
     const drone = await this.droneRepository.byID(id);
-    if(!drone) {
-      throw new NotFoundException('Drone does not exist.')
+    if (!drone) {
+      throw new NotFoundException('Drone does not exist.');
     }
-    return {battery: drone.battery ?? 0 }
+    return { battery: drone.battery ?? 0 };
   }
 }
