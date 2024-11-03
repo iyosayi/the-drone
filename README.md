@@ -82,7 +82,7 @@ To easily set up the service with MongoDB, you can use Docker Compose. A `docker
 The Docker Compose setup will automatically apply the required environment variable `MONGO_DB_URL` for MongoDB connectivity.
 
 ## API Endpoints
-Here is a summary of the core endpoints. For full details, refer to the [API documentation](#).
+Here is a summary of the core endpoints. For full details, refer to the [API documentation](https://documenter.getpostman.com/view/8430059/2sAY4xBhLe).
 
 ### Drones
 - **Register Drone**: `POST /drones`
