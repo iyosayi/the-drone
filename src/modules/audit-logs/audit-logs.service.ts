@@ -35,10 +35,7 @@ export class AuditLogService {
     private eventEmitter: EventEmitter2,
   ) {}
 
-  /**
-   * Cron job that runs every 10 minutes to check battery levels
-   */
-  @Cron(CronExpression.EVERY_5_SECONDS)
+  @Cron(CronExpression.EVERY_30_MINUTES)
   async checkBatteryLevels() {
     this.logger.log('Starting periodic battery level check...');
 
@@ -61,9 +58,6 @@ export class AuditLogService {
     }
   }
 
-  /**
-   * Process individual drone battery status
-   */
   private async processDroneBattery(drone: Drone): Promise<void> {
     const batteryLevel = drone.battery;
     let alertType: BatteryAuditLog['alertType'] = 'NORMAL';
@@ -76,25 +70,6 @@ export class AuditLogService {
       alertType = AlertTypes.LowBattery;
       stateUpdate = await this.handleLowBattery(drone);
     }
-
-    // console.log(
-    //   'AUDIT-LOG',
-    //   JSON.stringify(
-    //     {
-    //       drone: drone.id,
-    //       serialNumber: drone.serialNumber,
-    //       timestamp: new Date(),
-    //       batteryLevel,
-    //       state: drone.state,
-    //       alertType,
-    //       metadata: {
-    //         stateUpdate,
-    //       },
-    //     },
-    //     null,
-    //     2,
-    //   ),
-    // );
 
     await this.createBatteryAuditLog({
       drone: drone.id,
@@ -111,9 +86,6 @@ export class AuditLogService {
     this.emitBatteryEvents(drone, batteryLevel, alertType);
   }
 
-  /**
-   * Handle critical battery situation
-   */
   private async handleCriticalBattery(drone: Drone): Promise<DroneStateUpdate> {
     const previousState = drone.state;
     let newState = drone.state;

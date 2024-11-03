@@ -1,10 +1,29 @@
+import mongoose, {isValidObjectId} from 'mongoose';
 import { SequenceService } from '@modules/drones/sequence.service';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class HelperMethods {
   constructor(private readonly sequenceService: SequenceService) {}
-  private readonly PREFIX = 'DRN'; // Drone prefix
+  private readonly PREFIX = 'DRN';
+
+  sendSuccessResponse<T>(data: T, message: string) {
+    return {
+      success: true,
+      message,
+      data,
+    }
+  }
+
+  convertToObjectId = (id) => {
+    if (id) {
+      return new mongoose.Types.ObjectId(id)
+    }
+    return null
+  }
+  isValidObjectId = (id: string) => {
+    return isValidObjectId(id)
+  }
   /**
    * Generates a check digit using Luhn algorithm modified for alphanumeric values
    * This helps detect transcription errors
