@@ -27,6 +27,7 @@ describe('DronesService', () => {
           useValue: {
             create: jest.fn(),
             update: jest.fn(),
+            updateWithOperators: jest.fn(),
             byQuery: jest.fn(),
             byID: jest.fn(),
             all: jest.fn(),
@@ -157,9 +158,9 @@ describe('DronesService', () => {
       expect(ordersRepository.createMany).toHaveBeenCalledWith([
         { drone: drone.id, medication: medications[0].id },
       ]);
-      expect(droneRepository.update).toHaveBeenCalledWith(
+      expect(droneRepository.updateWithOperators).toHaveBeenCalledWith(
         { _id: drone.id },
-        { state: DroneStates.Loaded },
+        { $set: { state: DroneStates.Loaded }, $inc: { battery: -17 } },
       );
       expect(ordersRepository.getOrders).toHaveBeenCalledWith(drone.id);
       expect(result).toEqual(expectedResult);
