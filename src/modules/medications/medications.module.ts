@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { MedicationsService } from './medications.service';
-import { MedicationsController } from './medications.controller';
 import { MedicationRepository } from './repository/medication.repository';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Medication, MedicationSchema } from './entities/medication.entity';
@@ -15,8 +13,8 @@ import { MedicationSeeder } from './medication.seeder';
       },
     ]),
   ],
-  controllers: [MedicationsController],
-  providers: [MedicationsService, MedicationRepository, MedicationSeeder],
+  controllers: [],
+  providers: [MedicationRepository, MedicationSeeder],
   exports: [MedicationRepository],
 })
 export class MedicationsModule {}
