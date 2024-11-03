@@ -230,7 +230,7 @@ export class DronesService {
 
   async getAvailableDrones() {
     const drones = await this.droneRepository.all({
-      conditions: { state: { $ne: DroneStates.Idle } },
+      conditions: { state: { $eq: DroneStates.Idle } },
     });
     return drones.map((drone) => {
       return {
