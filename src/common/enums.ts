@@ -13,3 +13,9 @@ export enum DroneStates {
   Delivered = 'DELIVERED',
   Returning = 'RETURNING',
 }
+
+export enum AlertTypes {
+  LowBattery = 'LOW_BATTERY',
+  CriticalBattery = 'CRITICAL_BATTERY',
+  Normal = 'NORMAL',
+}

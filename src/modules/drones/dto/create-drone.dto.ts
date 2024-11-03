@@ -5,7 +5,8 @@ import {
   Min,
   Max,
   IsObject,
-  IsNotEmpty
+  IsNotEmpty,
+  IsArray
 } from 'class-validator';
 import { DroneModelEnum } from '@common/enums';
 import { Transform } from 'class-transformer'
@@ -15,7 +16,7 @@ export class CreateDroneDto {
   @IsString()
   @IsEnum(DroneModelEnum, {
     message:
-      'Model must be one of LightWeight, Middleweight,  Cruiserweight, Heavyweight',
+      'Model must be one of LightWeight, Middleweight, Cruiserweight, Heavyweight',
   })
   droneModel: DroneModelEnum;
 
@@ -27,7 +28,12 @@ export class CreateDroneDto {
 }
 
 export class LoadDroneDto {
-  @IsString()
+  @IsArray()
   @IsNotEmpty()
   medications: string[]
+}
+
+export class DroneIdRequired {
+  @IsNotEmpty({ message: 'Drone ID is required' })
+  droneId: string;
 }

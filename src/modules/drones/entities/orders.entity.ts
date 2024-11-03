@@ -1,17 +1,18 @@
-import { Prop, Schema } from '@nestjs/mongoose'
-import { HydratedDocument, SchemaTypes } from 'mongoose'
-import { BaseSchema, BaseSchemaFactory } from '@common/base.schema'
-import { Drone } from './drone.entity'
-import { Medication } from '@modules/medications/entities/medication.entity'
+import { Prop, Schema } from '@nestjs/mongoose';
+import { HydratedDocument, SchemaTypes } from 'mongoose';
+import { BaseSchema, BaseSchemaFactory } from '@common/base.schema';
+import { Drone } from './drone.entity';
+import { Medication } from '@modules/medications/entities/medication.entity';
 
 @Schema()
 export class Orders extends BaseSchema {
   @Prop({ type: SchemaTypes.ObjectId, required: true, ref: 'Drone' })
-  drone: Drone
+  drone: Drone;
 
   @Prop({ type: SchemaTypes.ObjectId, required: true, ref: 'Medication' })
-  medication: Medication
+  medication: Medication;
 }
 
-export const OrdersSchema = BaseSchemaFactory(Orders)
-export type OrdersDocument = HydratedDocument<Orders>
+export const OrdersSchema = BaseSchemaFactory(Orders);
+export type OrdersDocument = HydratedDocument<Orders>;
+OrdersSchema.index({ drone: 1 });

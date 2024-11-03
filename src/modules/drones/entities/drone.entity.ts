@@ -17,7 +17,7 @@ export class Drone extends BaseSchema {
   @Prop({ type: Number, required: true, min: 0, max: 500 })
   weight: number
 
-  @Prop({ type: Number, required: true, min: 0, max: 500, default: 100 })
+  @Prop({ type: Number, required: true, min: 0, max: 100, default: 100 })
   battery: number
 }
 

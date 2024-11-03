@@ -1,6 +1,6 @@
-import { Controller, Post, Body, Param, Get } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, ValidationPipe, BadRequestException } from '@nestjs/common';
 import { DronesService } from './drones.service';
-import { CreateDroneDto, LoadDroneDto } from './dto/create-drone.dto';
+import { CreateDroneDto, DroneIdRequired, LoadDroneDto } from './dto/create-drone.dto';
 import { HelperMethods } from '@common/helpers';
 
 @Controller('drones')
@@ -8,8 +8,11 @@ export class DronesController {
   constructor(private readonly dronesService: DronesService, private readonly helperMethods: HelperMethods) {}
 
   @Get('battery-health/:droneId')
-  async getDroneBatteryHealth(@Param('droneId') droneId) {
-    const response = await this.dronesService.getDroneBatteryHealth(droneId);
+  async getDroneBatteryHealth(@Param(new ValidationPipe()) params: DroneIdRequired) {
+    if (!params.droneId) {
+      throw new BadRequestException('Drone ID is required');
+    }
+    const response = await this.dronesService.getDroneBatteryHealth(params.droneId);
     return this.helperMethods.sendSuccessResponse(response, 'Drone battery gotten successfully')
   }
 
@@ -19,9 +22,9 @@ export class DronesController {
     return this.helperMethods.sendSuccessResponse(createdDrone, 'Drone created successfully')
   }
 
-  @Post(':serialNumber/load')
-  async loadDrones(@Body() body: LoadDroneDto, @Param('serialNumber') serialNumber) {
-    const response = await this.dronesService.loadDroneMedications(serialNumber, body.medications);
+  @Post(':droneId/load')
+  async loadDrones(@Body() body: LoadDroneDto, @Param(new ValidationPipe()) params: DroneIdRequired) {
+    const response = await this.dronesService.loadDroneMedications(params.droneId, body.medications);
     return this.helperMethods.sendSuccessResponse(response, 'Drone loaded successfully')
   }
   @Get('available')
@@ -30,9 +33,9 @@ export class DronesController {
     return this.helperMethods.sendSuccessResponse(response, 'Available drones retrieved successfully')
   }
 
-  @Get(':droneId')
-  async getDrone(@Body() body: LoadDroneDto, @Param('droneId') droneId) {
-    const response = await this.dronesService.getDroneWithOrders(droneId);
+  @Get('details/:droneId')
+  async getDrone(@Body() body: LoadDroneDto, @Param(new ValidationPipe()) params: DroneIdRequired) {
+    const response = await this.dronesService.getDroneWithOrders(params.droneId);
     return this.helperMethods.sendSuccessResponse(response, 'Drone gotten successfully')
   }
 }
