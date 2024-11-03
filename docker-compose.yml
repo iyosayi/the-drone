@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: mydatabase
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  nestjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: drone-delivery
+    environment:
+      MONGO_DB_URL: mongodb://root:example@mongodb:27017/mydatabase
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    command: ["npm", "run", "start:prod"]
+
+volumes:
+  mongo_data:
