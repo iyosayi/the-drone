@@ -589,7 +589,7 @@ describe('DronesService', () => {
 
       expect(result).toEqual(mockDrones);
       expect(droneRepository.all).toHaveBeenCalledWith({
-        conditions: { state: { $ne: DroneStates.Idle } },
+        conditions: { state: { $eq: DroneStates.Idle } },
       });
     });
 
@@ -600,7 +600,7 @@ describe('DronesService', () => {
 
       expect(result).toEqual([]);
       expect(droneRepository.all).toHaveBeenCalledWith({
-        conditions: { state: { $ne: DroneStates.Idle } },
+        conditions: { state: { $eq: DroneStates.Idle } },
       });
     });
   });
